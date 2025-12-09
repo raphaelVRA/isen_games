@@ -6,7 +6,7 @@ echo.
 
 REM Démarrer le serveur WebSocket en arrière-plan
 echo [1/2] Demarrage du serveur WebSocket (port 8081)...
-start /B node server.js
+start /B node server\server.js
 timeout /t 2 /nobreak >nul
 
 REM Démarrer le serveur HTTP

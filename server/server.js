@@ -11,9 +11,9 @@ const WS_PORT = 8081;
 const httpServer = http.createServer((req, res) => {
     // Supprimer les query strings (?v=2, etc.)
     let urlPath = req.url.split('?')[0];
-    let filePath = '.' + urlPath;
-    if (filePath === './') {
-        filePath = './index.html';
+    let filePath = path.join(__dirname, '..', 'public', urlPath);
+    if (urlPath === '/') {
+        filePath = path.join(__dirname, '..', 'public', 'index.html');
     }
 
     const extname = String(path.extname(filePath)).toLowerCase();
@@ -64,7 +64,8 @@ const wss = new WebSocket.Server({ port: WS_PORT });
 // Charger le dictionnaire de mots
 let FRENCH_WORDS = [];
 try {
-    const wordsData = fs.readFileSync('./words.js', 'utf8');
+    const wordsPath = path.join(__dirname, '..', 'public', 'js', 'words.js');
+    const wordsData = fs.readFileSync(wordsPath, 'utf8');
     const match = wordsData.match(/FRENCH_WORDS\s*=\s*(\[[\s\S]*?\]);/);
     if (match) {
         FRENCH_WORDS = JSON.parse(match[1].replace(/'/g, '"'));

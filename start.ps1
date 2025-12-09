@@ -7,7 +7,7 @@ Write-Host ""
 
 # Démarrer le serveur WebSocket
 Write-Host "[1/2] Demarrage du serveur WebSocket (port 8081)..." -ForegroundColor Green
-Start-Process powershell -ArgumentList "-NoExit", "-Command", "node server.js" -WindowStyle Minimized
+Start-Process powershell -ArgumentList "-NoExit", "-Command", "node server\server.js" -WindowStyle Minimized
 Start-Sleep -Seconds 2
 
 # Démarrer le serveur HTTP
