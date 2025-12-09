@@ -1,0 +1,192 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Multijoueur</title>
+    <link rel="stylesheet" href="snake-lobby.css">
+    <link rel="stylesheet" href="snake.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <!-- ========== PARTIE LOBBY ========== -->
+    <div id="lobby-container" class="lobby-container">
+        <header class="lobby-header">
+            <a href="index.html" class="back-link">← Retour</a>
+            <h1 class="lobby-title">🐍 Snake Multijoueur</h1>
+            <p class="lobby-subtitle">Affronte tes amis sur le même réseau local !</p>
+        </header>
+
+        <!-- Écran de connexion -->
+        <div id="connect-screen" class="screen active">
+            <div class="card connect-card">
+                <h2>Connexion au serveur</h2>
+                <p id="connect-status">Connexion en cours...</p>
+                <div class="input-group">
+                    <label for="username-input">Ton pseudo</label>
+                    <input type="text" id="username-input" placeholder="Entre ton pseudo" maxlength="15" autocomplete="off">
+                </div>
+                <button id="connect-btn" class="btn btn-primary" disabled>Rejoindre</button>
+            </div>
+        </div>
+
+        <!-- Écran menu -->
+        <div id="menu-screen" class="screen">
+            <div class="player-info">
+                <span class="player-name">👤 <span id="current-username">-</span></span>
+            </div>
+
+            <div class="menu-cards">
+                <div class="card action-card">
+                    <div class="card-icon">🏠</div>
+                    <h3>Créer un salon</h3>
+                    <p>Crée un salon et invite tes amis à rejoindre avec le code</p>
+                    <button id="create-room-btn" class="btn btn-success">Créer</button>
+                </div>
+
+                <div class="card action-card">
+                    <div class="card-icon">🚪</div>
+                    <h3>Rejoindre un salon</h3>
+                    <p>Entre le code du salon pour rejoindre tes amis</p>
+                    <div class="input-group">
+                        <input type="text" id="room-code-input" placeholder="CODE" maxlength="4" style="text-transform: uppercase;">
+                    </div>
+                    <button id="join-room-btn" class="btn btn-primary">Rejoindre</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Écran salon -->
+        <div id="room-screen" class="screen">
+            <div class="room-header">
+                <div class="room-info">
+                    <h2>Salon : <span id="room-code" class="room-code-display">----</span></h2>
+                    <p>Partage ce code avec tes amis pour qu'ils rejoignent !</p>
+                </div>
+                <div class="room-players-count">
+                    <span id="player-count">0</span>/4 joueurs
+                </div>
+            </div>
+
+            <div class="players-grid" id="players-list">
+            </div>
+
+            <div class="room-actions">
+                <button id="leave-room-btn" class="btn btn-danger">Quitter le salon</button>
+                <button id="toggle-ready-btn" class="btn btn-warning">Je suis prêt !</button>
+                <button id="start-game-btn" class="btn btn-success" style="display: none;">Lancer la partie</button>
+            </div>
+
+            <div class="game-rules">
+                <h3>🎮 Règles du jeu</h3>
+                <ul>
+                    <li>Utilisez les flèches ou ZQSD pour diriger votre serpent</li>
+                    <li>Mangez la nourriture pour grandir et marquer des points</li>
+                    <li>Évitez les murs, les autres serpents et vous-même</li>
+                    <li>Le dernier serpent en vie gagne !</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- Modal d'erreur -->
+        <div id="error-modal" class="modal">
+            <div class="modal-content">
+                <p id="error-message">Une erreur est survenue</p>
+                <button id="error-close-btn" class="btn btn-primary">OK</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ========== PARTIE JEU ========== -->
+    <div id="game-container" class="game-container" style="display: none;">
+        <!-- Header avec infos -->
+        <header class="game-header">
+            <div class="header-left">
+                <span class="room-code">Salon: <span id="game-room-code">----</span></span>
+            </div>
+            <div class="header-center">
+                <span id="game-status" class="game-status">En attente...</span>
+            </div>
+            <div class="header-right">
+                <button id="leave-game-btn" class="btn-leave">Quitter</button>
+            </div>
+        </header>
+
+        <!-- Zone de jeu principale -->
+        <div class="game-area">
+            <!-- Scoreboard gauche -->
+            <aside class="scoreboard" id="scoreboard">
+                <h3>🏆 Scores</h3>
+                <div class="scores-list" id="scores-list">
+                </div>
+            </aside>
+
+            <!-- Canvas du jeu -->
+            <div class="canvas-wrapper">
+                <canvas id="game-canvas"></canvas>
+                
+                <!-- Overlay de compte à rebours -->
+                <div id="countdown-overlay" class="overlay">
+                    <div class="countdown-number" id="countdown-number">3</div>
+                </div>
+
+                <!-- Overlay de fin de partie -->
+                <div id="gameover-overlay" class="overlay" style="display: none;">
+                    <div class="gameover-content">
+                        <h2 id="gameover-title">Partie terminée !</h2>
+                        <div id="winner-display" class="winner-display"></div>
+                        <div id="final-scores" class="final-scores"></div>
+                        <button id="return-lobby-btn" class="btn btn-primary">Retour au lobby</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Légende droite -->
+            <aside class="legend">
+                <h3>🎮 Contrôles</h3>
+                <div class="controls-list">
+                    <div class="control-item">
+                        <span class="key">↑ Z W</span>
+                        <span>Haut</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">↓ S</span>
+                        <span>Bas</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">← Q A</span>
+                        <span>Gauche</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">→ D</span>
+                        <span>Droite</span>
+                    </div>
+                </div>
+
+                <div class="legend-items">
+                    <h4>Légende</h4>
+                    <div class="legend-item">
+                        <span class="food-icon normal"></span>
+                        <span>Nourriture (+10 pts)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="food-icon super"></span>
+                        <span>Super (+50 pts, +3 taille)</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Barre d'infos en bas -->
+        <footer class="game-footer">
+            <div class="my-stats">
+                <span>Toi: <span id="my-username">-</span></span>
+                <span>Score: <span id="my-score">0</span></span>
+                <span>Longueur: <span id="my-length">3</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="snake-game.js"></script>
+</body>
+</html>

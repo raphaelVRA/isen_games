@@ -1,0 +1,103 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Snake Multijoueur</title>
+    <link rel="stylesheet" href="snake.css">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-container">
+        <!-- Header avec infos -->
+        <header class="game-header">
+            <div class="header-left">
+                <span class="room-code">Salon: <span id="room-code">----</span></span>
+            </div>
+            <div class="header-center">
+                <span id="game-status" class="game-status">En attente...</span>
+            </div>
+            <div class="header-right">
+                <button id="leave-btn" class="btn-leave">Quitter</button>
+            </div>
+        </header>
+
+        <!-- Zone de jeu principale -->
+        <div class="game-area">
+            <!-- Scoreboard gauche -->
+            <aside class="scoreboard" id="scoreboard">
+                <h3>🏆 Scores</h3>
+                <div class="scores-list" id="scores-list">
+                    <!-- Rempli dynamiquement -->
+                </div>
+            </aside>
+
+            <!-- Canvas du jeu -->
+            <div class="canvas-wrapper">
+                <canvas id="game-canvas"></canvas>
+                
+                <!-- Overlay de compte à rebours -->
+                <div id="countdown-overlay" class="overlay">
+                    <div class="countdown-number" id="countdown-number">3</div>
+                </div>
+
+                <!-- Overlay de fin de partie -->
+                <div id="gameover-overlay" class="overlay" style="display: none;">
+                    <div class="gameover-content">
+                        <h2 id="gameover-title">Partie terminée !</h2>
+                        <div id="winner-display" class="winner-display"></div>
+                        <div id="final-scores" class="final-scores"></div>
+                        <button id="return-lobby-btn" class="btn btn-primary">Retour au lobby</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Légende droite -->
+            <aside class="legend">
+                <h3>🎮 Contrôles</h3>
+                <div class="controls-list">
+                    <div class="control-item">
+                        <span class="key">↑ Z W</span>
+                        <span>Haut</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">↓ S</span>
+                        <span>Bas</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">← Q A</span>
+                        <span>Gauche</span>
+                    </div>
+                    <div class="control-item">
+                        <span class="key">→ D</span>
+                        <span>Droite</span>
+                    </div>
+                </div>
+
+                <div class="legend-items">
+                    <h4>Légende</h4>
+                    <div class="legend-item">
+                        <span class="food-icon normal"></span>
+                        <span>Nourriture (+10 pts)</span>
+                    </div>
+                    <div class="legend-item">
+                        <span class="food-icon super"></span>
+                        <span>Super (+50 pts, +3 taille)</span>
+                    </div>
+                </div>
+            </aside>
+        </div>
+
+        <!-- Barre d'infos en bas -->
+        <footer class="game-footer">
+            <div class="my-stats">
+                <span>Toi: <span id="my-username">-</span></span>
+                <span>Score: <span id="my-score">0</span></span>
+                <span>Longueur: <span id="my-length">3</span></span>
+            </div>
+        </footer>
+    </div>
+
+    <script src="snake.js"></script>
+</body>
+</html>

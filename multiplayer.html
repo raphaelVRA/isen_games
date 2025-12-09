@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUSMO Multijoueur</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="multiplayer.css">
+</head>
+<body>
+    <div class="game-wrapper">
+        <!-- En-tête avec infos de la partie -->
+        <div class="game-header">
+            <div class="room-info">
+                <h1>Salon <span id="room-code">XXXX</span></h1>
+                <p class="mode-display" id="mode-display">Mode: Essais</p>
+            </div>
+            <div class="timer-display" id="timer-display" style="display: none;">
+                <div class="timer-icon">⏱️</div>
+                <div class="timer-value" id="timer-value">5:00</div>
+            </div>
+            <button id="leave-game-btn" class="btn-leave">Quitter</button>
+        </div>
+
+        <!-- Container principal avec grille et classement -->
+        <div class="game-container">
+            <!-- Grille de jeu -->
+            <div class="game-board">
+                <div class="board-header">
+                    <h2>Votre grille</h2>
+                    <div class="attempt-counter">
+                        Essai <span id="current-attempt">1</span>/6
+                    </div>
+                </div>
+                
+                <div id="game-grid" class="grid">
+                    <!-- Les lignes seront générées dynamiquement -->
+                </div>
+
+                <!-- Clavier virtuel -->
+                <div class="keyboard" id="keyboard">
+                    <div class="keyboard-row">
+                        <button class="key" data-key="A">A</button>
+                        <button class="key" data-key="Z">Z</button>
+                        <button class="key" data-key="E">E</button>
+                        <button class="key" data-key="R">R</button>
+                        <button class="key" data-key="T">T</button>
+                        <button class="key" data-key="Y">Y</button>
+                        <button class="key" data-key="U">U</button>
+                        <button class="key" data-key="I">I</button>
+                        <button class="key" data-key="O">O</button>
+                        <button class="key" data-key="P">P</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="key" data-key="Q">Q</button>
+                        <button class="key" data-key="S">S</button>
+                        <button class="key" data-key="D">D</button>
+                        <button class="key" data-key="F">F</button>
+                        <button class="key" data-key="G">G</button>
+                        <button class="key" data-key="H">H</button>
+                        <button class="key" data-key="J">J</button>
+                        <button class="key" data-key="K">K</button>
+                        <button class="key" data-key="L">L</button>
+                        <button class="key" data-key="M">M</button>
+                    </div>
+                    <div class="keyboard-row">
+                        <button class="key key-large" data-key="Enter">Entrée</button>
+                        <button class="key" data-key="W">W</button>
+                        <button class="key" data-key="X">X</button>
+                        <button class="key" data-key="C">C</button>
+                        <button class="key" data-key="V">V</button>
+                        <button class="key" data-key="B">B</button>
+                        <button class="key" data-key="N">N</button>
+                        <button class="key key-large" data-key="Backspace">⌫</button>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Classement en direct -->
+            <div class="leaderboard">
+                <div class="leaderboard-header">
+                    <h2>🏆 Classement</h2>
+                    <p class="player-count"><span id="players-count">0</span> joueurs</p>
+                </div>
+
+                <div id="players-list" class="players-list">
+                    <!-- Les joueurs seront ajoutés dynamiquement -->
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal de fin de partie -->
+    <div id="end-modal" class="modal">
+        <div class="modal-content">
+            <h2 id="end-title">Partie terminée !</h2>
+            
+            <div class="word-reveal">
+                Le mot était : <span id="revealed-word">XXXXX</span>
+            </div>
+
+            <div id="final-ranking" class="final-ranking">
+                <!-- Classement final sera affiché ici -->
+            </div>
+
+            <div class="modal-actions">
+                <button id="new-game-btn" class="btn btn-primary">Nouvelle partie</button>
+                <button id="back-to-lobby-btn" class="btn btn-secondary">Retour au lobby</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'erreur -->
+    <div id="error-modal" class="modal">
+        <div class="modal-content">
+            <h3>❌ Erreur</h3>
+            <p id="error-message"></p>
+            <button id="error-close-btn" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+
+    <script src="multiplayer.js"></script>
+</body>
+</html>

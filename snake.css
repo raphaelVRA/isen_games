@@ -1,0 +1,454 @@
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --accent-red: #ff2e63;
+    --accent-yellow: #ffd700;
+    --accent-blue: #00f2ff;
+    --accent-green: #00ff00;
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --glass-bg: rgba(15, 23, 42, 0.8);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: #0a1628;
+    background-image: 
+        radial-gradient(circle at 50% 0%, #1a2a4a 0%, transparent 50%),
+        radial-gradient(circle at 0% 100%, #00ff0010 0%, transparent 40%);
+    min-height: 100vh;
+    color: var(--text-primary);
+    overflow: hidden;
+}
+
+.game-container {
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    padding: 10px;
+    gap: 10px;
+}
+
+/* Header */
+.game-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+
+.header-left .room-code {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.header-left .room-code span {
+    color: var(--accent-green);
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 2px;
+}
+
+.game-status {
+    font-size: 1.2rem;
+    font-weight: 600;
+    color: var(--accent-yellow);
+}
+
+.btn-leave {
+    background: transparent;
+    border: 2px solid var(--accent-red);
+    color: var(--accent-red);
+    padding: 8px 16px;
+    border-radius: 8px;
+    font-size: 0.9rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.btn-leave:hover {
+    background: var(--accent-red);
+    color: white;
+}
+
+/* Game Area */
+.game-area {
+    flex: 1;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+}
+
+/* Scoreboard */
+.scoreboard {
+    width: 220px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 20px;
+    height: fit-content;
+    max-height: 100%;
+    overflow-y: auto;
+}
+
+.scoreboard h3 {
+    color: var(--accent-yellow);
+    margin-bottom: 15px;
+    font-size: 1.1rem;
+}
+
+.scores-list {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.score-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+    transition: all 0.2s ease;
+}
+
+.score-item.me {
+    border: 1px solid var(--accent-green);
+    background: rgba(0, 255, 0, 0.05);
+}
+
+.score-item.dead {
+    opacity: 0.5;
+}
+
+.score-item .rank {
+    font-weight: 700;
+    color: var(--text-secondary);
+    min-width: 25px;
+}
+
+.score-item .player-color {
+    width: 12px;
+    height: 12px;
+    border-radius: 3px;
+}
+
+.score-item .player-name {
+    flex: 1;
+    font-size: 0.9rem;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.score-item .player-score {
+    font-weight: 600;
+    color: var(--accent-yellow);
+    font-family: 'Roboto Mono', monospace;
+}
+
+.score-item .dead-icon {
+    font-size: 0.9rem;
+}
+
+/* Canvas */
+.canvas-wrapper {
+    position: relative;
+    border: 3px solid var(--glass-border);
+    border-radius: 10px;
+    overflow: hidden;
+    box-shadow: 0 0 50px rgba(0, 255, 0, 0.1);
+}
+
+#game-canvas {
+    display: block;
+    background: #0a1628;
+}
+
+/* Overlays */
+.overlay {
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    background: rgba(10, 22, 40, 0.9);
+    z-index: 10;
+}
+
+.countdown-number {
+    font-size: 8rem;
+    font-weight: 800;
+    color: var(--accent-green);
+    text-shadow: 0 0 50px rgba(0, 255, 0, 0.5);
+    font-family: 'Roboto Mono', monospace;
+}
+
+.countdown-number.animate {
+    animation: countdownPulse 0.8s ease-out;
+}
+
+@keyframes countdownPulse {
+    0% {
+        transform: scale(1.5);
+        opacity: 0;
+    }
+    50% {
+        opacity: 1;
+    }
+    100% {
+        transform: scale(1);
+        opacity: 1;
+    }
+}
+
+/* Game Over Overlay */
+.gameover-content {
+    text-align: center;
+    max-width: 500px;
+    padding: 40px;
+}
+
+.gameover-content h2 {
+    font-size: 2.5rem;
+    margin-bottom: 30px;
+    color: var(--accent-yellow);
+}
+
+.winner-display {
+    margin-bottom: 30px;
+}
+
+.winner-card {
+    display: inline-flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 10px;
+    padding: 20px 40px;
+    background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.1));
+    border: 2px solid var(--accent-yellow);
+    border-radius: 15px;
+}
+
+.winner-card .crown {
+    font-size: 3rem;
+}
+
+.winner-card .winner-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--accent-yellow);
+}
+
+.winner-card .winner-tag {
+    font-size: 0.9rem;
+    color: var(--accent-green);
+    background: rgba(0, 255, 0, 0.1);
+    padding: 5px 15px;
+    border-radius: 20px;
+}
+
+.final-scores {
+    margin-bottom: 30px;
+}
+
+.final-score-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 12px 20px;
+    margin-bottom: 8px;
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: 8px;
+}
+
+.final-score-item.me {
+    border: 1px solid var(--accent-green);
+    background: rgba(0, 255, 0, 0.05);
+}
+
+.final-rank {
+    font-weight: 700;
+    min-width: 40px;
+}
+
+.final-name {
+    flex: 1;
+    text-align: left;
+    margin-left: 10px;
+}
+
+.final-score {
+    color: var(--accent-yellow);
+    font-weight: 600;
+    margin-right: 15px;
+}
+
+.final-length {
+    color: var(--text-secondary);
+}
+
+/* Legend */
+.legend {
+    width: 180px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 20px;
+    height: fit-content;
+}
+
+.legend h3, .legend h4 {
+    color: var(--accent-blue);
+    margin-bottom: 15px;
+    font-size: 1rem;
+}
+
+.legend h4 {
+    margin-top: 20px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.controls-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.control-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.control-item .key {
+    background: var(--bg-secondary);
+    padding: 4px 8px;
+    border-radius: 5px;
+    font-family: 'Roboto Mono', monospace;
+    font-size: 0.75rem;
+    color: var(--text-primary);
+    border: 1px solid var(--glass-border);
+}
+
+.legend-items {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.food-icon {
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+}
+
+.food-icon.normal {
+    background: var(--accent-red);
+}
+
+.food-icon.super {
+    background: linear-gradient(135deg, var(--accent-yellow), #ff8c00);
+    box-shadow: 0 0 8px rgba(255, 215, 0, 0.5);
+}
+
+/* Footer */
+.game-footer {
+    padding: 10px 20px;
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 12px;
+}
+
+.my-stats {
+    display: flex;
+    justify-content: center;
+    gap: 30px;
+    font-size: 1rem;
+}
+
+.my-stats span {
+    color: var(--text-secondary);
+}
+
+.my-stats span span {
+    color: var(--accent-green);
+    font-weight: 600;
+    font-family: 'Roboto Mono', monospace;
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 30px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-green), #00cc00);
+    color: #0f172a;
+}
+
+.btn-primary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 1000px) {
+    .scoreboard, .legend {
+        display: none;
+    }
+    
+    .game-area {
+        padding: 10px;
+    }
+}
+
+@media (max-width: 650px) {
+    .canvas-wrapper {
+        transform: scale(0.8);
+        transform-origin: center;
+    }
+    
+    .game-header {
+        flex-direction: column;
+        gap: 10px;
+        text-align: center;
+    }
+    
+    .my-stats {
+        flex-direction: column;
+        gap: 5px;
+    }
+}

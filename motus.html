@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Motus / Tusmo - Arcade de Mots</title>
+    <link rel="stylesheet" href="styles.css?v=2">
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@400;600;800&family=Roboto+Mono:wght@500;700&display=swap" rel="stylesheet">
+</head>
+<body>
+    <div class="game-wrapper">
+        <div class="top-bar">
+            <a href="index.html" class="back-btn">← Accueil</a>
+        </div>
+
+        <div class="game-container">
+            <header>
+                <div class="logo-container">
+                    <div class="logo-letter">T</div>
+                    <div class="logo-letter">U</div>
+                    <div class="logo-letter">S</div>
+                    <div class="logo-letter">M</div>
+                    <div class="logo-letter">O</div>
+                </div>
+                <p class="subtitle">LE MOT DU JOUR</p>
+            </header>
+
+            <div class="stats-bar">
+                <div class="stat">
+                    <span class="stat-value" id="current-streak">0</span>
+                    <span class="stat-label">🔥 Série</span>
+                </div>
+                <div class="stat record-stat">
+                    <span class="stat-value" id="best-streak">0</span>
+                    <span class="stat-label">🏆 Record</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="current-score">0</span>
+                    <span class="stat-label">💎 Score</span>
+                </div>
+                <div class="stat record-stat">
+                    <span class="stat-value" id="best-score">0</span>
+                    <span class="stat-label">🌟 Best</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="total-wins">0</span>
+                    <span class="stat-label">Victoires</span>
+                </div>
+                <div class="stat">
+                    <span class="stat-value" id="total-games">0</span>
+                    <span class="stat-label">Parties</span>
+                </div>
+            </div>
+
+            <div class="word-info">
+                <span id="word-length">Le mot contient <strong>6</strong> lettres</span>
+            </div>
+
+            <div class="grid-container">
+                <div id="game-grid" class="game-grid">
+                    <!-- Les lignes seront générées dynamiquement -->
+                </div>
+            </div>
+
+            <div id="message" class="message"></div>
+
+            <div class="keyboard" id="keyboard">
+                <div class="keyboard-row">
+                    <button class="key" data-key="A">A</button>
+                    <button class="key" data-key="Z">Z</button>
+                    <button class="key" data-key="E">E</button>
+                    <button class="key" data-key="R">R</button>
+                    <button class="key" data-key="T">T</button>
+                    <button class="key" data-key="Y">Y</button>
+                    <button class="key" data-key="U">U</button>
+                    <button class="key" data-key="I">I</button>
+                    <button class="key" data-key="O">O</button>
+                    <button class="key" data-key="P">P</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key" data-key="Q">Q</button>
+                    <button class="key" data-key="S">S</button>
+                    <button class="key" data-key="D">D</button>
+                    <button class="key" data-key="F">F</button>
+                    <button class="key" data-key="G">G</button>
+                    <button class="key" data-key="H">H</button>
+                    <button class="key" data-key="J">J</button>
+                    <button class="key" data-key="K">K</button>
+                    <button class="key" data-key="L">L</button>
+                    <button class="key" data-key="M">M</button>
+                </div>
+                <div class="keyboard-row">
+                    <button class="key key-enter" data-key="ENTER">ENTRER</button>
+                    <button class="key" data-key="W">W</button>
+                    <button class="key" data-key="X">X</button>
+                    <button class="key" data-key="C">C</button>
+                    <button class="key" data-key="V">V</button>
+                    <button class="key" data-key="B">B</button>
+                    <button class="key" data-key="N">N</button>
+                    <button class="key key-backspace" data-key="BACKSPACE">⌫</button>
+                </div>
+            </div>
+
+            <button id="new-game-btn" class="new-game-btn">Nouveau mot</button>
+        </div>
+    </div>
+
+    <!-- Modal de fin de partie -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <h2 id="modal-title">Bravo !</h2>
+            <p id="modal-message"></p>
+            <div id="modal-word" class="modal-word"></div>
+            <button id="modal-btn" class="modal-btn">Nouveau mot</button>
+        </div>
+    </div>
+
+    <script src="words.js"></script>
+    <script src="game.js"></script>
+</body>
+</html>

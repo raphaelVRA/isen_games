@@ -1,0 +1,428 @@
+:root {
+    --bg-primary: #0f172a;
+    --bg-secondary: #1e293b;
+    --accent-red: #ff2e63;
+    --accent-yellow: #ffd700;
+    --accent-blue: #00f2ff;
+    --accent-green: #00ff00;
+    --text-primary: #ffffff;
+    --text-secondary: #94a3b8;
+    --glass-bg: rgba(15, 23, 42, 0.6);
+    --glass-border: rgba(255, 255, 255, 0.08);
+}
+
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: 'Montserrat', sans-serif;
+    background-color: var(--bg-primary);
+    background-image: 
+        radial-gradient(circle at 50% 0%, #2a4a34 0%, transparent 50%),
+        radial-gradient(circle at 85% 30%, #00ff0020 0%, transparent 30%),
+        radial-gradient(circle at 15% 70%, #ffd70020 0%, transparent 30%);
+    min-height: 100vh;
+    color: var(--text-primary);
+    display: flex;
+    justify-content: center;
+    align-items: flex-start;
+    padding: 40px 20px;
+}
+
+.lobby-container {
+    max-width: 900px;
+    width: 100%;
+    display: flex;
+    flex-direction: column;
+    gap: 30px;
+}
+
+/* Header */
+.lobby-header {
+    text-align: center;
+}
+
+.back-link {
+    color: var(--accent-green);
+    text-decoration: none;
+    font-size: 0.95rem;
+    display: inline-block;
+    margin-bottom: 15px;
+    transition: color 0.2s ease;
+}
+
+.back-link:hover {
+    color: var(--text-primary);
+}
+
+.lobby-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    margin-bottom: 10px;
+    color: var(--text-primary);
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 2px;
+}
+
+.lobby-subtitle {
+    font-size: 1rem;
+    color: var(--text-secondary);
+}
+
+/* Screens */
+.screen {
+    display: none;
+    flex-direction: column;
+    gap: 25px;
+}
+
+.screen.active {
+    display: flex;
+}
+
+/* Cards */
+.card {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 20px;
+    padding: 30px;
+}
+
+.connect-card {
+    max-width: 400px;
+    margin: 0 auto;
+    text-align: center;
+}
+
+.connect-card h2 {
+    font-size: 1.5rem;
+    margin-bottom: 15px;
+    color: var(--accent-green);
+}
+
+#connect-status {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+}
+
+/* Menu cards */
+.menu-cards {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+    gap: 20px;
+}
+
+.action-card {
+    text-align: center;
+    transition: transform 0.2s ease, border-color 0.2s ease;
+}
+
+.action-card:hover {
+    transform: translateY(-3px);
+    border-color: var(--accent-green);
+}
+
+.card-icon {
+    font-size: 3rem;
+    margin-bottom: 15px;
+}
+
+.action-card h3 {
+    font-size: 1.3rem;
+    margin-bottom: 10px;
+    color: var(--accent-green);
+}
+
+.action-card p {
+    color: var(--text-secondary);
+    margin-bottom: 20px;
+    font-size: 0.9rem;
+}
+
+/* Player info */
+.player-info {
+    text-align: center;
+    padding: 10px;
+}
+
+.player-name {
+    font-size: 1.2rem;
+    color: var(--accent-green);
+}
+
+/* Input groups */
+.input-group {
+    margin-bottom: 15px;
+}
+
+.input-group label {
+    display: block;
+    margin-bottom: 8px;
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.input-group input {
+    width: 100%;
+    padding: 12px 16px;
+    border: 2px solid var(--glass-border);
+    border-radius: 10px;
+    background: var(--bg-secondary);
+    color: var(--text-primary);
+    font-size: 1rem;
+    font-family: 'Roboto Mono', monospace;
+    transition: border-color 0.2s ease;
+}
+
+.input-group input:focus {
+    outline: none;
+    border-color: var(--accent-green);
+}
+
+.input-group input::placeholder {
+    color: var(--text-secondary);
+}
+
+/* Buttons */
+.btn {
+    padding: 12px 24px;
+    border: none;
+    border-radius: 10px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-family: 'Montserrat', sans-serif;
+}
+
+.btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-primary {
+    background: linear-gradient(135deg, var(--accent-blue), #0099a3);
+    color: var(--text-primary);
+}
+
+.btn-primary:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 242, 255, 0.3);
+}
+
+.btn-success {
+    background: linear-gradient(135deg, var(--accent-green), #00cc00);
+    color: #0f172a;
+}
+
+.btn-success:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
+}
+
+.btn-warning {
+    background: linear-gradient(135deg, var(--accent-yellow), #d4b200);
+    color: #0f172a;
+}
+
+.btn-warning:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(255, 215, 0, 0.3);
+}
+
+.btn-danger {
+    background: linear-gradient(135deg, var(--accent-red), #c41b45);
+    color: var(--text-primary);
+}
+
+.btn-danger:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(255, 46, 99, 0.3);
+}
+
+.btn-secondary {
+    background: var(--bg-secondary);
+    color: var(--text-secondary);
+    border: 2px solid var(--glass-border);
+}
+
+/* Room Screen */
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    flex-wrap: wrap;
+    gap: 15px;
+}
+
+.room-info h2 {
+    font-size: 1.5rem;
+    margin-bottom: 5px;
+}
+
+.room-code-display {
+    color: var(--accent-green);
+    font-family: 'Roboto Mono', monospace;
+    letter-spacing: 3px;
+    font-size: 1.8rem;
+}
+
+.room-info p {
+    color: var(--text-secondary);
+    font-size: 0.9rem;
+}
+
+.room-players-count {
+    font-size: 1.2rem;
+    color: var(--accent-yellow);
+    background: rgba(255, 215, 0, 0.1);
+    padding: 10px 20px;
+    border-radius: 50px;
+}
+
+/* Players grid */
+.players-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 15px;
+}
+
+.player-card {
+    background: var(--glass-bg);
+    border: 2px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 20px;
+    display: flex;
+    align-items: center;
+    gap: 15px;
+    transition: all 0.3s ease;
+}
+
+.player-card.ready {
+    border-color: var(--accent-green);
+    box-shadow: 0 0 15px rgba(0, 255, 0, 0.2);
+}
+
+.player-avatar {
+    width: 50px;
+    height: 50px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.5rem;
+}
+
+.player-card .player-info {
+    flex: 1;
+    text-align: left;
+    padding: 0;
+}
+
+.player-card .player-name {
+    display: block;
+    font-weight: 600;
+    color: var(--text-primary);
+    margin-bottom: 4px;
+}
+
+.player-status {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Room actions */
+.room-actions {
+    display: flex;
+    justify-content: center;
+    gap: 15px;
+    flex-wrap: wrap;
+}
+
+/* Game rules */
+.game-rules {
+    background: var(--glass-bg);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 20px 25px;
+}
+
+.game-rules h3 {
+    color: var(--accent-yellow);
+    margin-bottom: 15px;
+}
+
+.game-rules ul {
+    list-style: none;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+}
+
+.game-rules li {
+    color: var(--text-secondary);
+    padding-left: 25px;
+    position: relative;
+}
+
+.game-rules li::before {
+    content: '🐍';
+    position: absolute;
+    left: 0;
+}
+
+/* Modal */
+.modal {
+    display: none;
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.7);
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.modal.active {
+    display: flex;
+}
+
+.modal-content {
+    background: var(--bg-secondary);
+    border: 1px solid var(--glass-border);
+    border-radius: 15px;
+    padding: 30px;
+    text-align: center;
+    max-width: 400px;
+    width: 90%;
+}
+
+.modal-content p {
+    margin-bottom: 20px;
+    color: var(--text-primary);
+}
+
+/* Responsive */
+@media (max-width: 600px) {
+    .lobby-title {
+        font-size: 1.8rem;
+    }
+    
+    .room-header {
+        flex-direction: column;
+        text-align: center;
+    }
+    
+    .room-actions {
+        flex-direction: column;
+    }
+    
+    .room-actions .btn {
+        width: 100%;
+    }
+}

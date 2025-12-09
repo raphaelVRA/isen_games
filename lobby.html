@@ -1,0 +1,145 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TUSMO Multijoueur - Lobby</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Montserrat:wght@600;700;800&family=Roboto+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="lobby.css">
+</head>
+<body>
+    <div class="container">
+        <!-- Bouton retour -->
+        <a href="index.html" class="back-btn">
+            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                <path d="M19 12H5M12 19l-7-7 7-7"/>
+            </svg>
+            Menu
+        </a>
+
+        <!-- Écran de connexion -->
+        <div id="connect-screen" class="screen active">
+            <div class="logo">
+                <h1>TUSMO</h1>
+                <p class="subtitle">Multijoueur</p>
+            </div>
+
+            <div class="card">
+                <h2>Bienvenue !</h2>
+                <div class="input-group">
+                    <label for="username-input">Votre pseudo</label>
+                    <input 
+                        type="text" 
+                        id="username-input" 
+                        placeholder="Entrez votre pseudo" 
+                        maxlength="15"
+                        autocomplete="off"
+                    >
+                </div>
+                <button id="connect-btn" class="btn btn-primary">Se connecter</button>
+                <p class="status-text" id="connect-status">Connexion au serveur...</p>
+            </div>
+        </div>
+
+        <!-- Écran de sélection -->
+        <div id="menu-screen" class="screen">
+            <div class="logo-small">
+                <h2>TUSMO Multijoueur</h2>
+                <p class="username-display">Connecté en tant que <span id="current-username"></span></p>
+            </div>
+
+            <div class="card">
+                <h2>Créer un salon</h2>
+                <div class="mode-selector">
+                    <label class="mode-option">
+                        <input type="radio" name="mode" value="essais" checked>
+                        <div class="mode-card">
+                            <div class="mode-icon">⏱️</div>
+                            <h3>Moins d'essais</h3>
+                            <p>Le joueur avec le moins d'essais gagne. Bonus de 25 points pour le premier à finir.</p>
+                            <div class="mode-scoring">
+                                <strong>Scores:</strong> 100, 80, 60, 40, 20, 10 points
+                            </div>
+                        </div>
+                    </label>
+                    <label class="mode-option">
+                        <input type="radio" name="mode" value="temps">
+                        <div class="mode-card">
+                            <div class="mode-icon">⚡</div>
+                            <h3>Moins de temps</h3>
+                            <p>Le premier à trouver gagne. Maximum 5 minutes par partie.</p>
+                            <div class="mode-scoring">
+                                <strong>Scores:</strong> 100, 75, 50, 25, 10 points (ordre d'arrivée)
+                            </div>
+                        </div>
+                    </label>
+                </div>
+                <button id="create-room-btn" class="btn btn-primary">Créer un salon</button>
+            </div>
+
+            <div class="divider">
+                <span>ou</span>
+            </div>
+
+            <div class="card">
+                <h2>Rejoindre un salon</h2>
+                <div class="input-group">
+                    <label for="room-code-input">Code du salon</label>
+                    <input 
+                        type="text" 
+                        id="room-code-input" 
+                        placeholder="ABCD" 
+                        maxlength="4"
+                        autocomplete="off"
+                        style="text-transform: uppercase; text-align: center; font-size: 1.5rem; letter-spacing: 0.5rem;"
+                    >
+                </div>
+                <button id="join-room-btn" class="btn btn-secondary">Rejoindre</button>
+            </div>
+        </div>
+
+        <!-- Écran de salon -->
+        <div id="room-screen" class="screen">
+            <div class="room-header">
+                <div class="room-info">
+                    <h2>Salon <span id="room-code"></span></h2>
+                    <p class="room-mode">Mode: <span id="room-mode-text"></span></p>
+                </div>
+                <button id="leave-room-btn" class="btn btn-danger">Quitter</button>
+            </div>
+
+            <div class="room-content">
+                <div class="players-section">
+                    <h3>Joueurs (<span id="player-count">0</span>)</h3>
+                    <div id="players-list" class="players-list">
+                        <!-- Les joueurs seront ajoutés ici dynamiquement -->
+                    </div>
+                </div>
+
+                <div class="room-actions">
+                    <button id="toggle-ready-btn" class="btn btn-secondary">
+                        <span class="ready-icon">✓</span> Je suis prêt
+                    </button>
+                    <button id="start-game-btn" class="btn btn-primary" style="display: none;">
+                        Démarrer la partie
+                    </button>
+                    <p class="waiting-text">En attente des autres joueurs...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal d'erreur -->
+    <div id="error-modal" class="modal">
+        <div class="modal-content">
+            <h3>Erreur</h3>
+            <p id="error-message"></p>
+            <button id="error-close-btn" class="btn btn-primary">OK</button>
+        </div>
+    </div>
+
+    <script src="lobby.js"></script>
+</body>
+</html>

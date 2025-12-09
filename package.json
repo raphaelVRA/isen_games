@@ -1,0 +1,25 @@
+{
+  "name": "tusmo-multiplayer",
+  "version": "1.0.0",
+  "description": "Jeu TUSMO/Motus en français avec modes solo et multijoueur compétitif",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "keywords": [
+    "tusmo",
+    "motus",
+    "wordle",
+    "word-game",
+    "multiplayer",
+    "websocket"
+  ],
+  "author": "Slither Team",
+  "license": "ISC",
+  "type": "commonjs",
+  "dependencies": {
+    "ws": "^8.18.3"
+  }
+}
