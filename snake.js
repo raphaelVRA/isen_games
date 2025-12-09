@@ -1,12 +1,13 @@
 // Configuration
-const GRID_SIZE = 40;
-const CELL_SIZE = 15;
+const GRID_SIZE = 15;
+const CELL_SIZE = 25;
 
 // État du jeu
 let ws = null;
 let gameData = null;
 let players = new Map();
 let food = null;
+let powerUps = [];
 let myId = null;
 let isGameOver = false;
 let animationFrameId = null;
@@ -19,7 +20,9 @@ const PLAYER_COLORS = [
     { main: '#00ff00', dark: '#00cc00', name: 'Vert' },
     { main: '#ff2e63', dark: '#cc2550', name: 'Rouge' },
     { main: '#00f2ff', dark: '#00c2cc', name: 'Cyan' },
-    { main: '#ffd700', dark: '#ccac00', name: 'Jaune' }
+    { main: '#ffd700', dark: '#ccac00', name: 'Jaune' },
+    { main: '#ff69b4', dark: '#cc5690', name: 'Rose' },
+    { main: '#9d4edd', dark: '#7d3eb8', name: 'Violet' }
 ];
 
 // Éléments DOM
@@ -37,6 +40,8 @@ const elements = {
     gameoverTitle: document.getElementById('gameover-title'),
     winnerDisplay: document.getElementById('winner-display'),
     finalScores: document.getElementById('final-scores'),
+    quickRestartBtn: document.getElementById('quick-restart-btn'),
+    replayBtn: document.getElementById('replay-btn'),
     returnLobbyBtn: document.getElementById('return-lobby-btn')
 };
 
@@ -68,6 +73,8 @@ function init() {
     // Event listeners
     setupControls();
     elements.leaveBtn.addEventListener('click', leaveGame);
+    elements.quickRestartBtn.addEventListener('click', quickRestart);
+    elements.replayBtn.addEventListener('click', replayGame);
     elements.returnLobbyBtn.addEventListener('click', returnToLobby);
 }
 
@@ -168,6 +175,14 @@ function handleServerMessage(message) {
         case 'snake-your-id':
             myId = message.data.id;
             break;
+        
+        case 'snake-restart':
+            // Retour au lobby après la fin de partie
+            isGameOver = false;
+            elements.gameoverOverlay.style.display = 'none';
+            elements.gameStatus.textContent = 'En attente...';
+            console.log('🔄 Retour au lobby');
+            break;
 
         case 'error':
             alert(message.data.message);
@@ -204,12 +219,26 @@ function updateGameState(data) {
 
     // Mettre à jour la nourriture
     food = data.food;
+    
+    // Mettre à jour les power-ups
+    powerUps = data.powerUps || [];
 
     // Mettre à jour mes stats
     const me = players.get(myId);
     if (me) {
         elements.myScore.textContent = me.score;
         elements.myLength.textContent = me.snake.length;
+        
+        // Afficher les effets actifs
+        if (me.speedBoost) {
+            elements.gameStatus.textContent = '⚡ BOOST ACTIVÉ!';
+        } else if (me.shield) {
+            elements.gameStatus.textContent = '🛡️ SHIELD ACTIVÉ!';
+        } else if (me.combo > 1) {
+            elements.gameStatus.textContent = `🔥 COMBO x${me.combo}`;
+        } else {
+            elements.gameStatus.textContent = '🎮 En cours!';
+        }
     }
 
     // Mettre à jour le scoreboard
@@ -251,6 +280,8 @@ function handlePlayerDied(data) {
 function handleGameEnd(data) {
     isGameOver = true;
     elements.gameoverOverlay.style.display = 'flex';
+    
+    const isHost = data.hostId === myId;
 
     if (data.winner) {
         const isMe = data.winner.id === myId;
@@ -278,6 +309,14 @@ function handleGameEnd(data) {
                 <span class="final-length">${p.length} 🐍</span>
             </div>
         `).join('');
+    
+    // Afficher les boutons en fonction du rôle
+    const quickRestartBtn = document.getElementById('quick-restart-btn');
+    if (isHost) {
+        quickRestartBtn.style.display = 'inline-block';
+    } else {
+        quickRestartBtn.style.display = 'none';
+    }
 }
 
 // Rendu du jeu
@@ -285,20 +324,6 @@ function render() {
     // Clear
     ctx.fillStyle = '#0a1628';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
-
-    // Grille
-    ctx.strokeStyle = '#1a2a3a';
-    ctx.lineWidth = 0.5;
-    for (let i = 0; i <= GRID_SIZE; i++) {
-        ctx.beginPath();
-        ctx.moveTo(i * CELL_SIZE, 0);
-        ctx.lineTo(i * CELL_SIZE, canvas.height);
-        ctx.stroke();
-        ctx.beginPath();
-        ctx.moveTo(0, i * CELL_SIZE);
-        ctx.lineTo(canvas.width, i * CELL_SIZE);
-        ctx.stroke();
-    }
 
     // Dessiner la nourriture
     if (food) {
@@ -344,6 +369,31 @@ function render() {
             ctx.fill();
         }
     }
+    
+    // Dessiner les power-ups
+    powerUps.forEach(powerUp => {
+        const x = powerUp.x * CELL_SIZE + CELL_SIZE / 2;
+        const y = powerUp.y * CELL_SIZE + CELL_SIZE / 2;
+        
+        // Effet de pulsation
+        const pulse = Math.sin(Date.now() / 200) * 0.2 + 1;
+        const size = CELL_SIZE * 0.5 * pulse;
+        
+        // Cercle de fond
+        ctx.fillStyle = powerUp.color;
+        ctx.shadowColor = powerUp.color;
+        ctx.shadowBlur = 20;
+        ctx.beginPath();
+        ctx.arc(x, y, size, 0, Math.PI * 2);
+        ctx.fill();
+        ctx.shadowBlur = 0;
+        
+        // Emoji au centre
+        ctx.font = `${CELL_SIZE * 0.7}px Arial`;
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(powerUp.emoji, x, y);
+    });
 
     // Dessiner les serpents
     players.forEach((player) => {
@@ -357,8 +407,21 @@ function render() {
             
             if (isHead) {
                 // Tête avec effet
-                ctx.shadowColor = player.color.main;
-                ctx.shadowBlur = 8;
+                ctx.shadowColor = player.speedBoost ? '#00ffff' : (player.shield ? '#ff69b4' : player.color.main);
+                ctx.shadowBlur = player.speedBoost || player.shield ? 15 : 8;
+                
+                // Effet shield avec bordure
+                if (player.shield) {
+                    ctx.strokeStyle = '#ff69b4';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(
+                        segment.x * CELL_SIZE,
+                        segment.y * CELL_SIZE,
+                        CELL_SIZE,
+                        CELL_SIZE
+                    );
+                }
+                
                 ctx.fillRect(
                     segment.x * CELL_SIZE + 1,
                     segment.y * CELL_SIZE + 1,
@@ -499,6 +562,22 @@ function send(message) {
     if (ws && ws.readyState === WebSocket.OPEN) {
         ws.send(JSON.stringify(message));
     }
+}
+
+// Relancer instantanément (hôte uniquement)
+function quickRestart() {
+    send({ type: 'snake-quick-restart' });
+    isGameOver = false;
+    elements.gameoverOverlay.style.display = 'none';
+    elements.gameStatus.textContent = 'Relance...';
+}
+
+// Rejouer une partie
+function replayGame() {
+    send({ type: 'snake-restart-game' });
+    isGameOver = false;
+    elements.gameoverOverlay.style.display = 'none';
+    elements.gameStatus.textContent = 'En attente...';
 }
 
 // Quitter la partie

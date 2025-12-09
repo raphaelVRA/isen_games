@@ -1,9 +1,63 @@
 const WebSocket = require('ws');
 const fs = require('fs');
+const http = require('http');
+const path = require('path');
 
-// Configuration du serveur WebSocket
-const PORT = 8081;
-const wss = new WebSocket.Server({ port: PORT });
+// Configuration des serveurs
+const HTTP_PORT = 3000;
+const WS_PORT = 8081;
+
+// Créer le serveur HTTP pour servir les fichiers statiques
+const httpServer = http.createServer((req, res) => {
+    let filePath = '.' + req.url;
+    if (filePath === './') {
+        filePath = './index.html';
+    }
+
+    const extname = String(path.extname(filePath)).toLowerCase();
+    const mimeTypes = {
+        '.html': 'text/html',
+        '.js': 'text/javascript',
+        '.css': 'text/css',
+        '.json': 'application/json',
+        '.png': 'image/png',
+        '.jpg': 'image/jpg',
+        '.gif': 'image/gif',
+        '.svg': 'image/svg+xml',
+        '.wav': 'audio/wav',
+        '.mp4': 'video/mp4',
+        '.woff': 'application/font-woff',
+        '.ttf': 'application/font-ttf',
+        '.eot': 'application/vnd.ms-fontobject',
+        '.otf': 'application/font-otf',
+        '.wasm': 'application/wasm'
+    };
+
+    const contentType = mimeTypes[extname] || 'application/octet-stream';
+
+    fs.readFile(filePath, (error, content) => {
+        if (error) {
+            if (error.code === 'ENOENT') {
+                res.writeHead(404, { 'Content-Type': 'text/html' });
+                res.end('<h1>404 - Fichier non trouvé</h1>', 'utf-8');
+            } else {
+                res.writeHead(500);
+                res.end('Erreur serveur: ' + error.code + ' ..\n');
+            }
+        } else {
+            res.writeHead(200, { 'Content-Type': contentType });
+            res.end(content, 'utf-8');
+        }
+    });
+});
+
+httpServer.listen(HTTP_PORT, () => {
+    console.log(`🌐 Serveur HTTP démarré sur http://localhost:${HTTP_PORT}`);
+    console.log(`   Ouvrez http://localhost:${HTTP_PORT}/snake-lobby.html pour jouer`);
+});
+
+// Créer le serveur WebSocket
+const wss = new WebSocket.Server({ port: WS_PORT });
 
 // Charger le dictionnaire de mots
 let FRENCH_WORDS = [];
@@ -27,18 +81,31 @@ if (FRENCH_WORDS.length === 0) {
 const clients = new Map(); // ws -> { id, username, roomCode, isReady }
 const rooms = new Map(); // roomCode -> Room object (TUSMO)
 const snakeRooms = new Map(); // roomCode -> SnakeRoom object
+const bannedIPs = new Set(); // IPs bannis
+const connectionTracker = new Map(); // IP -> { count, lastReset }
 
 // Générateur d'IDs uniques
 let clientIdCounter = 0;
+
+// Limites de connexion
+const MAX_CONNECTIONS_PER_MINUTE = 10;
+const BAN_DURATION = 5 * 60 * 1000; // 5 minutes
 
 // ==========================================
 // ====== SNAKE MULTIPLAYER CLASSES =========
 // ==========================================
 
-const SNAKE_GRID_SIZE = 25;
+const SNAKE_GRID_SIZE = 15;
 const SNAKE_INITIAL_LENGTH = 3;
-const SNAKE_TICK_RATE = 80; // ms - plus rapide pour plus de fluidité
-const PLAYER_COLORS = ['#00ff00', '#ff2e63', '#00f2ff', '#ffd700'];
+const SNAKE_TICK_RATE = 80; // ms - plus rapide et fluide
+const PLAYER_COLORS = ['#00ff00', '#ff2e63', '#00f2ff', '#ffd700', '#ff69b4', '#9d4edd'];
+
+// Types de power-ups
+const POWERUP_TYPES = [
+    { type: 'speed', color: '#00ffff', emoji: '⚡', duration: 5000 },
+    { type: 'shield', color: '#ff69b4', emoji: '🛡️', duration: 8000 },
+    { type: 'mega', color: '#ffd700', emoji: '⭐', duration: 0 }
+];
 
 class SnakeRoom {
     constructor(code, hostId) {
@@ -48,10 +115,12 @@ class SnakeRoom {
         this.status = 'waiting'; // 'waiting', 'countdown', 'playing', 'finished'
         this.gridSize = SNAKE_GRID_SIZE;
         this.food = null;
+        this.powerUps = []; // Power-ups actifs
         this.gameInterval = null;
         this.tickRate = SNAKE_TICK_RATE;
         this.startTime = null;
         this.superFoodTimer = null;
+        this.powerUpTimer = null;
     }
 }
 
@@ -67,17 +136,24 @@ class SnakePlayer {
         this.nextDirection = 'right';
         this.score = 0;
         this.alive = true;
+        this.speedBoost = false;
+        this.shield = false;
+        this.powerUpEndTime = 0;
+        this.combo = 0;
+        this.lastFoodTime = 0;
     }
 }
 
 // Positions de départ selon l'index du joueur
 function getStartPosition(index, gridSize) {
-    const margin = 4;
+    const center = Math.floor(gridSize / 2);
     const positions = [
-        { x: margin, y: Math.floor(gridSize / 4), dir: 'right' },
-        { x: gridSize - margin - 1, y: Math.floor(gridSize * 3 / 4), dir: 'left' },
-        { x: Math.floor(gridSize / 4), y: gridSize - margin - 1, dir: 'up' },
-        { x: Math.floor(gridSize * 3 / 4), y: margin, dir: 'down' }
+        { x: 3, y: 3, dir: 'right' },
+        { x: gridSize - 4, y: gridSize - 4, dir: 'left' },
+        { x: 3, y: gridSize - 4, dir: 'right' },
+        { x: gridSize - 4, y: 3, dir: 'left' },
+        { x: center, y: 3, dir: 'down' },
+        { x: center, y: gridSize - 4, dir: 'up' }
     ];
     return positions[index % positions.length];
 }
@@ -100,11 +176,17 @@ function initializeSnake(player, index, gridSize) {
             case 'down': y -= i; break;
         }
         
+        // Vérifier que le segment est dans la grille
+        x = Math.max(0, Math.min(gridSize - 1, x));
+        y = Math.max(0, Math.min(gridSize - 1, y));
+        
         player.snake.push({ x, y });
     }
     
     player.alive = true;
     player.score = 0;
+    
+    console.log(`🐍 Init ${player.username} à (${player.snake[0].x}, ${player.snake[0].y}) direction: ${player.direction}`);
 }
 
 // Générer de la nourriture
@@ -127,6 +209,34 @@ function spawnFood(room, isSuper = false) {
     
     room.food = { x, y, isSuper };
     return room.food;
+}
+
+// Générer un power-up
+function spawnPowerUp(room) {
+    const occupiedCells = new Set();
+    
+    room.players.forEach(player => {
+        player.snake.forEach(segment => {
+            occupiedCells.add(`${segment.x},${segment.y}`);
+        });
+    });
+    
+    if (room.food) {
+        occupiedCells.add(`${room.food.x},${room.food.y}`);
+    }
+    
+    let x, y;
+    let attempts = 0;
+    do {
+        x = Math.floor(Math.random() * room.gridSize);
+        y = Math.floor(Math.random() * room.gridSize);
+        attempts++;
+    } while (occupiedCells.has(`${x},${y}`) && attempts < 1000);
+    
+    const powerUp = POWERUP_TYPES[Math.floor(Math.random() * POWERUP_TYPES.length)];
+    room.powerUps.push({ x, y, ...powerUp, id: Date.now() });
+    
+    return room.powerUps[room.powerUps.length - 1];
 }
 
 // Broadcast à tous les joueurs d'une room Snake
@@ -211,13 +321,21 @@ function startSnakeGame(room) {
         updateSnakeGame(room);
     }, room.tickRate);
     
-    // Timer pour la super nourriture (toutes les 30 secondes)
+    // Timer pour la super nourriture (toutes les 20 secondes)
     room.superFoodTimer = setInterval(() => {
-        if (room.status === 'playing' && !room.food.isSuper) {
+        if (room.status === 'playing' && Math.random() < 0.5) {
             spawnFood(room, true);
             sendSnakeGameState(room);
         }
-    }, 30000);
+    }, 20000);
+    
+    // Timer pour les power-ups (toutes les 15 secondes)
+    room.powerUpTimer = setInterval(() => {
+        if (room.status === 'playing' && room.powerUps.length < 2) {
+            spawnPowerUp(room);
+            sendSnakeGameState(room);
+        }
+    }, 15000);
     
     console.log(`🐍 Snake: Partie démarrée dans la room ${room.code}`);
 }
@@ -234,8 +352,10 @@ function updateSnakeGame(room) {
         return;
     }
     
-    // Mettre à jour chaque joueur
-    alivePlayers.forEach(player => {
+    // Calculer d'abord toutes les nouvelles positions
+    const moves = [];
+    
+    for (const player of alivePlayers) {
         // Appliquer la direction
         player.direction = player.nextDirection;
         
@@ -249,33 +369,68 @@ function updateSnakeGame(room) {
             case 'right': head.x++; break;
         }
         
+        moves.push({ player, head });
+    }
+    
+    // Vérifier les collisions et appliquer les mouvements
+    for (const { player, head } of moves) {
+        // Vérifier si le joueur est toujours vivant
+        if (!player.alive) continue;
+        
         // Vérifier les collisions avec les murs
         if (head.x < 0 || head.x >= room.gridSize || head.y < 0 || head.y >= room.gridSize) {
-            killPlayer(room, player);
-            return;
+            console.log(`💥 ${player.username} COLLISION MUR à (${head.x}, ${head.y}) - Grille valide: 0-${room.gridSize-1}`);
+            player.alive = false;
+            player.snake = [];
+            broadcastToSnakeRoom(room, {
+                type: 'snake-player-died',
+                data: { playerId: player.id, username: player.username }
+            });
+            continue;
         }
         
-        // Vérifier les collisions avec soi-même
-        if (player.snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-            killPlayer(room, player);
-            return;
+        // Vérifier les collisions avec soi-même (exclure la dernière case qui va disparaître)
+        let selfCollision = false;
+        for (let i = 0; i < player.snake.length - 1; i++) {
+            if (player.snake[i].x === head.x && player.snake[i].y === head.y) {
+                console.log(`🐍 ${player.username} auto-collision`);
+                player.alive = false;
+                player.snake = [];
+                broadcastToSnakeRoom(room, {
+                    type: 'snake-player-died',
+                    data: { playerId: player.id, username: player.username }
+                });
+                selfCollision = true;
+                break;
+            }
         }
+        
+        if (selfCollision || !player.alive) continue;
         
         // Vérifier les collisions avec les autres serpents
-        let hitOtherSnake = false;
-        room.players.forEach(otherPlayer => {
-            if (otherPlayer.id !== player.id && otherPlayer.alive) {
-                if (otherPlayer.snake.some(segment => segment.x === head.x && segment.y === head.y)) {
-                    hitOtherSnake = true;
-                    // Le joueur qui a été touché gagne des points
-                    otherPlayer.score += 100;
+        let collision = false;
+        for (const otherPlayer of room.players.values()) {
+            if (otherPlayer.id !== player.id && otherPlayer.alive && otherPlayer.snake.length > 0) {
+                for (const segment of otherPlayer.snake) {
+                    if (segment.x === head.x && segment.y === head.y) {
+                        collision = true;
+                        otherPlayer.score += 100;
+                        console.log(`⚔️ ${player.username} vs ${otherPlayer.username}`);
+                        break;
+                    }
                 }
+                if (collision) break;
             }
-        });
+        }
         
-        if (hitOtherSnake) {
-            killPlayer(room, player);
-            return;
+        if (collision) {
+            player.alive = false;
+            player.snake = [];
+            broadcastToSnakeRoom(room, {
+                type: 'snake-player-died',
+                data: { playerId: player.id, username: player.username }
+            });
+            continue;
         }
         
         // Déplacer le serpent
@@ -283,8 +438,21 @@ function updateSnakeGame(room) {
         
         // Vérifier si on mange la nourriture
         if (room.food && head.x === room.food.x && head.y === room.food.y) {
-            // Score
-            player.score += room.food.isSuper ? 50 : 10;
+            const now = Date.now();
+            const timeSinceLastFood = now - player.lastFoodTime;
+            
+            // Système de combo (si mangé rapidement)
+            if (timeSinceLastFood < 3000 && player.lastFoodTime > 0) {
+                player.combo++;
+            } else {
+                player.combo = 1;
+            }
+            player.lastFoodTime = now;
+            
+            // Score avec bonus combo
+            const baseScore = room.food.isSuper ? 50 : 10;
+            const comboBonus = Math.min(player.combo - 1, 5) * 5;
+            player.score += baseScore + comboBonus;
             
             // Grandir
             const growth = room.food.isSuper ? 3 : 1;
@@ -295,23 +463,40 @@ function updateSnakeGame(room) {
             // Nouvelle nourriture
             spawnFood(room, false);
         } else {
-            // Retirer la queue si pas de nourriture mangée
-            player.snake.pop();
+            // Retirer la queue si pas de nourriture mangée (sauf avec shield)
+            if (!player.shield) {
+                player.snake.pop();
+            }
+        }
+        
+        // Le joueur est vivant, continuer le mouvement
+        
+        // Vérifier les power-ups
+        room.powerUps = room.powerUps.filter(powerUp => {
+            if (head.x === powerUp.x && head.y === powerUp.y) {
+                applyPowerUp(player, powerUp);
+                return false;
+            }
+            return true;
+        });
+        
+        // Gérer les power-ups actifs
+        const now = Date.now();
+        if (player.powerUpEndTime > 0 && now >= player.powerUpEndTime) {
+            player.speedBoost = false;
+            player.shield = false;
+            player.powerUpEndTime = 0;
         }
         
         // Points de survie
-        player.score += 0.1;
-    });
+        player.score += player.speedBoost ? 0.2 : 0.1;
+    }
     
-    // Accélération progressive (toutes les 30 secondes)
-    const elapsed = Date.now() - room.startTime;
-    const newTickRate = Math.max(50, SNAKE_TICK_RATE - Math.floor(elapsed / 30000) * 5);
-    if (newTickRate !== room.tickRate) {
-        room.tickRate = newTickRate;
-        clearInterval(room.gameInterval);
-        room.gameInterval = setInterval(() => {
-            updateSnakeGame(room);
-        }, room.tickRate);
+    // Vérifier s'il ne reste qu'un joueur vivant
+    const stillAlive = Array.from(room.players.values()).filter(p => p.alive);
+    if (stillAlive.length <= 1) {
+        setTimeout(() => endSnakeGame(room), 500);
+        return;
     }
     
     // Envoyer l'état du jeu
@@ -320,20 +505,41 @@ function updateSnakeGame(room) {
 
 // Tuer un joueur
 function killPlayer(room, player) {
+    if (!player.alive) return; // Déjà mort
+    
     player.alive = false;
     player.snake = [];
     
-    console.log(`🐍 Snake: ${player.username} est éliminé !`);
+    console.log(`❌ ${player.username} éliminé`);
     
     broadcastToSnakeRoom(room, {
         type: 'snake-player-died',
         data: { playerId: player.id, username: player.username }
     });
+}
+
+// Appliquer un power-up
+function applyPowerUp(player, powerUp) {
+    const now = Date.now();
     
-    // Vérifier s'il ne reste qu'un joueur
-    const alivePlayers = Array.from(room.players.values()).filter(p => p.alive);
-    if (alivePlayers.length <= 1) {
-        setTimeout(() => endSnakeGame(room), 500);
+    switch (powerUp.type) {
+        case 'speed':
+            player.speedBoost = true;
+            player.powerUpEndTime = now + powerUp.duration;
+            player.score += 20;
+            break;
+        case 'shield':
+            player.shield = true;
+            player.powerUpEndTime = now + powerUp.duration;
+            player.score += 30;
+            break;
+        case 'mega':
+            // Mega donne instantanément +5 segments et 100 points
+            for (let i = 0; i < 5; i++) {
+                player.snake.push({ ...player.snake[player.snake.length - 1] });
+            }
+            player.score += 100;
+            break;
     }
 }
 
@@ -345,7 +551,10 @@ function sendSnakeGameState(room) {
         snake: p.snake,
         score: Math.floor(p.score),
         alive: p.alive,
-        color: p.color
+        color: p.color,
+        speedBoost: p.speedBoost,
+        shield: p.shield,
+        combo: p.combo
     }));
     
     broadcastToSnakeRoom(room, {
@@ -353,6 +562,7 @@ function sendSnakeGameState(room) {
         data: {
             players: playersData,
             food: room.food,
+            powerUps: room.powerUps,
             tickRate: room.tickRate
         }
     });
@@ -372,6 +582,10 @@ function endSnakeGame(room) {
     if (room.superFoodTimer) {
         clearInterval(room.superFoodTimer);
         room.superFoodTimer = null;
+    }
+    if (room.powerUpTimer) {
+        clearInterval(room.powerUpTimer);
+        room.powerUpTimer = null;
     }
     
     // Trouver le gagnant
@@ -403,12 +617,75 @@ function endSnakeGame(room) {
         type: 'snake-game-end',
         data: {
             winner: winner ? { id: winner.id, username: winner.username } : null,
-            results: results.sort((a, b) => b.score - a.score)
+            results: results.sort((a, b) => b.score - a.score),
+            hostId: room.hostId
         }
     });
     
-    // NE PAS réinitialiser automatiquement - les joueurs doivent manuellement retourner au lobby
-    console.log(`🐍 Snake: Room ${room.code} en attente de retour au lobby des joueurs`);
+    // Attendre les actions des joueurs (rejouer ou quitter)
+    console.log(`🐍 Snake: Room ${room.code} en attente d'action des joueurs`);
+}
+
+// Redémarrer une partie Snake (rejouer)
+function restartSnakeGame(room) {
+    if (room.status !== 'finished') return;
+    
+    console.log(`🐍 Snake: Redémarrage de la partie dans la room ${room.code}`);
+    
+    // Réinitialiser tous les joueurs
+    room.players.forEach(player => {
+        player.isReady = false;
+        player.alive = true;
+        player.score = 0;
+        player.snake = [];
+        player.speedBoost = false;
+        player.shield = false;
+        player.powerUpEndTime = 0;
+        player.combo = 0;
+        player.lastFoodTime = 0;
+    });
+    
+    // Réinitialiser la room
+    room.status = 'waiting';
+    room.food = null;
+    room.powerUps = [];
+    room.tickRate = SNAKE_TICK_RATE;
+    
+    // Notifier tous les joueurs du retour au lobby
+    broadcastToSnakeRoom(room, {
+        type: 'snake-restart',
+        data: { message: 'Retour au lobby - Prêtez-vous!' }
+    });
+    
+    sendSnakeRoomStatus(room);
+}
+
+// Relancer instantanément la partie (sans attendre)
+function quickRestartSnakeGame(room) {
+    if (room.status !== 'finished') return;
+    
+    console.log(`⚡ Snake: Relance instantanée dans la room ${room.code}`);
+    
+    // Réinitialiser tous les joueurs
+    room.players.forEach(player => {
+        player.isReady = true; // Tous prêts automatiquement
+        player.alive = true;
+        player.score = 0;
+        player.snake = [];
+        player.speedBoost = false;
+        player.shield = false;
+        player.powerUpEndTime = 0;
+        player.combo = 0;
+        player.lastFoodTime = 0;
+    });
+    
+    // Réinitialiser la room
+    room.food = null;
+    room.powerUps = [];
+    room.tickRate = SNAKE_TICK_RATE;
+    
+    // Démarrer le compte à rebours directement
+    startSnakeCountdown(room);
 }
 
 // Gérer la déconnexion d'un client Snake
@@ -489,6 +766,51 @@ class Player {
         this.score = 0;
         this.attemptCount = 0;
     }
+}
+
+// Vérifier et gérer le rate limiting
+function checkRateLimit(ip) {
+    const now = Date.now();
+    
+    // Vérifier si l'IP est bannie
+    if (bannedIPs.has(ip)) {
+        return false;
+    }
+    
+    // Récupérer ou créer le tracker pour cette IP
+    if (!connectionTracker.has(ip)) {
+        connectionTracker.set(ip, { count: 1, lastReset: now });
+        return true;
+    }
+    
+    const tracker = connectionTracker.get(ip);
+    
+    // Réinitialiser le compteur toutes les 60 secondes
+    if (now - tracker.lastReset > 60000) {
+        tracker.count = 1;
+        tracker.lastReset = now;
+        return true;
+    }
+    
+    // Incrémenter le compteur
+    tracker.count++;
+    
+    // Si dépassement, bannir l'IP
+    if (tracker.count > MAX_CONNECTIONS_PER_MINUTE) {
+        bannedIPs.add(ip);
+        console.log(`🚫 IP BANNIE: ${ip} (${tracker.count} connexions en 1 min)`);
+        
+        // Débannir après la durée
+        setTimeout(() => {
+            bannedIPs.delete(ip);
+            connectionTracker.delete(ip);
+            console.log(`✅ IP débannie: ${ip}`);
+        }, BAN_DURATION);
+        
+        return false;
+    }
+    
+    return true;
 }
 
 // Génération de code de salon (4 lettres majuscules)
@@ -876,9 +1198,19 @@ function handleDisconnect(ws) {
 }
 
 // Gestion des connexions WebSocket
-wss.on('connection', (ws) => {
+wss.on('connection', (ws, req) => {
+    // Récupérer l'IP du client
+    const ip = req.headers['x-forwarded-for']?.split(',')[0] || req.socket.remoteAddress;
+    
+    // Vérifier le rate limit
+    if (!checkRateLimit(ip)) {
+        console.log(`❌ Connexion refusée pour IP bannie: ${ip}`);
+        ws.close(1008, 'Trop de connexions. Vous êtes temporairement banni.');
+        return;
+    }
+    
     const clientId = ++clientIdCounter;
-    console.log(`🔌 Nouvelle connexion: Client ${clientId}`);
+    console.log(`🔌 Connexion ${clientId} depuis ${ip}`);
 
     // Initialiser le client
     clients.set(ws, {
@@ -886,7 +1218,8 @@ wss.on('connection', (ws) => {
         username: `Joueur${clientId}`,
         roomCode: null,
         snakeRoomCode: null,
-        isReady: false
+        isReady: false,
+        ip: ip
     });
 
     // Envoyer l'ID au client
@@ -932,6 +1265,13 @@ wss.on('connection', (ws) => {
                     break;
 
                 case 'join-room':
+                    if (!message.data || !message.data.code) {
+                        ws.send(JSON.stringify({
+                            type: 'error',
+                            data: { message: 'Code de salon invalide' }
+                        }));
+                        break;
+                    }
                     const joinCode = message.data.code.toUpperCase();
                     const targetRoom = rooms.get(joinCode);
 
@@ -1097,6 +1437,13 @@ wss.on('connection', (ws) => {
                     break;
 
                 case 'join-snake-room':
+                    if (!message.data || !message.data.code) {
+                        ws.send(JSON.stringify({
+                            type: 'error',
+                            data: { message: 'Code de salon invalide' }
+                        }));
+                        break;
+                    }
                     const joinSnakeCode = message.data.code.toUpperCase();
                     const targetSnakeRoom = snakeRooms.get(joinSnakeCode);
 
@@ -1116,10 +1463,10 @@ wss.on('connection', (ws) => {
                         break;
                     }
 
-                    if (targetSnakeRoom.players.size >= 4) {
+                    if (targetSnakeRoom.players.size >= 6) {
                         ws.send(JSON.stringify({
                             type: 'error',
-                            data: { message: 'Salon plein (max 4 joueurs)' }
+                            data: { message: 'Salon plein (max 6 joueurs)' }
                         }));
                         break;
                     }
@@ -1274,6 +1621,22 @@ wss.on('connection', (ws) => {
                     }
                     break;
 
+                case 'snake-restart-game':
+                    if (!client.snakeRoomCode) break;
+                    const restartRoom = snakeRooms.get(client.snakeRoomCode);
+                    if (restartRoom && restartRoom.status === 'finished') {
+                        restartSnakeGame(restartRoom);
+                    }
+                    break;
+                
+                case 'snake-quick-restart':
+                    if (!client.snakeRoomCode) break;
+                    const quickRoom = snakeRooms.get(client.snakeRoomCode);
+                    if (quickRoom && quickRoom.status === 'finished' && quickRoom.hostId === client.id) {
+                        quickRestartSnakeGame(quickRoom);
+                    }
+                    break;
+
                 case 'leave-snake-room':
                     if (!client.snakeRoomCode) break;
                     const leaveSnakeRoom = snakeRooms.get(client.snakeRoomCode);
@@ -1343,5 +1706,5 @@ wss.on('connection', (ws) => {
     });
 });
 
-console.log(`🚀 Serveur WebSocket TUSMO démarré sur le port ${PORT}`);
-console.log(`📡 Les clients peuvent se connecter à ws://localhost:${PORT}`);
+console.log(`🚀 Serveur WebSocket démarré sur le port ${WS_PORT}`);
+console.log(`📡 Les clients peuvent se connecter à ws://localhost:${WS_PORT}`);

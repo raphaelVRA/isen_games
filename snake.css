@@ -424,6 +424,54 @@ body {
     box-shadow: 0 5px 20px rgba(0, 255, 0, 0.3);
 }
 
+.btn-instant {
+    background: linear-gradient(135deg, #00ffff, #00cccc);
+    color: #0f172a;
+    font-size: 1.2rem;
+    font-weight: 800;
+    padding: 18px 45px;
+    animation: pulse 1.5s infinite;
+}
+
+.btn-instant:hover {
+    transform: translateY(-3px) scale(1.05);
+    box-shadow: 0 8px 30px rgba(0, 255, 255, 0.6);
+}
+
+@keyframes pulse {
+    0%, 100% { box-shadow: 0 5px 20px rgba(0, 255, 255, 0.3); }
+    50% { box-shadow: 0 5px 35px rgba(0, 255, 255, 0.6); }
+}
+
+.btn-success {
+    background: linear-gradient(135deg, #00ff00, #00cc00);
+    color: #0f172a;
+    font-size: 1.1rem;
+    padding: 15px 40px;
+}
+
+.btn-success:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 25px rgba(0, 255, 0, 0.4);
+}
+
+.btn-secondary {
+    background: linear-gradient(135deg, #64748b, #475569);
+    color: white;
+}
+
+.btn-secondary:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 5px 20px rgba(100, 116, 139, 0.3);
+}
+
+.gameover-buttons {
+    display: flex;
+    gap: 15px;
+    margin-top: 20px;
+    justify-content: center;
+}
+
 /* Responsive */
 @media (max-width: 1000px) {
     .scoreboard, .legend {
